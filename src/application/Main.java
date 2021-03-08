@@ -5,7 +5,10 @@ Written by Jonathan Balina
 */
 package application;
 	
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
@@ -28,6 +31,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
@@ -35,11 +40,9 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
 
 
 public class Main extends Application {
@@ -80,7 +83,8 @@ public class Main extends Application {
 			root.getChildren().add(mainRoot);
 			Scene scene = new Scene(root, 500, 400);
 			HBox titleBlock = new HBox();
-			Text title = new Text("Point of Sale");
+			Label title = new Label("Point of Sale");
+			titleBlock.setAlignment(Pos.CENTER);
 			title.getStyleClass().add("title");
 			titleBlock.getChildren().addAll(title);
 			mainRoot.setTop(titleBlock);
@@ -97,6 +101,10 @@ public class Main extends Application {
 			TextField price = new TextField();
 			TextField quantity = new TextField();
 			TextField scanItem = new TextField();
+			ImageView itemPic = new ImageView();
+			itemPic.setImage(null);
+			itemPic.setFitHeight(60);
+			itemPic.setFitWidth(98);
 			
 			
 			itemAbout.add(new Label("Item Name:"), 0, 0, 1, 1);
@@ -106,6 +114,7 @@ public class Main extends Application {
 			itemAbout.add(price, 2, 3, 1, 1);
 			itemAbout.add(new Label("Quantity:"), 1, 5, 1, 1);
 			itemAbout.add(quantity, 2, 5, 1, 1);
+			itemAbout.add(itemPic, 0, 3, 1, 3);
 			itemAbout.add(new Label("Scan Item:"), 0, 7, 1, 1);
 			itemAbout.add(scanItem, 1, 7, 2, 1);
 			
@@ -286,7 +295,7 @@ public class Main extends Application {
 			receiptFrame.add(new Label("******************************************************"), 0, 11, 4, 1);
 			
 			
-			int[] receiptContentsRows = {0};
+			//int[] receiptContentsRows = {0};
 			receiptFrame.add(receiptContents, 0, 12, 4, 1);
 			
 			receiptFrame.add(new Label(""), 0, 13, 4, 1);
@@ -343,6 +352,17 @@ public class Main extends Application {
 			receipt.setContent(receiptFrame);
 			
 			
+			//LEFT**********************************************
+			
+			VBox left = new VBox();
+			left.setSpacing(75);
+			left.getStyleClass().add("leftPane");
+			//left.setAlignment(Pos.CENTER_LEFT);
+			Button openMenu = new Button("MENU");
+			Button openSignIn = new Button("SIGN IN");
+			openMenu.getStyleClass().add("leftButton");
+			openSignIn.getStyleClass().add("leftButton");
+			left.getChildren().addAll(openMenu, openSignIn);
 			
 			
 			
@@ -357,11 +377,13 @@ public class Main extends Application {
 			
 			
 			
+			
 			body.setAlignment(Pos.CENTER);
 			body.setHgap(30);
 			body.setVgap(10);
-			openCashierSignIn(root, cashierValue, scanItem);
 			mainRoot.setCenter(body);
+			mainRoot.setLeft(left);
+			openCashierSignIn(root, cashierValue, scanItem);
 			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 			primaryStage.setScene(scene);
 			primaryStage.setFullScreen(true);
@@ -378,6 +400,8 @@ public class Main extends Application {
 			//***********************************************************
 			TextField[] TextFields = {scanItem, quantity, price, payType, payment};
 			int[] oldFocus = {0};
+			
+			
 			scanItem.textProperty().addListener(new ChangeListener<String>() {
 				@Override
 				public void changed(ObservableValue<? extends String> observable,
@@ -385,77 +409,17 @@ public class Main extends Application {
 					if(newValue.length() == 4) {
 						int itemsIndex = itemData.GetRowIndexBySearch(newValue, 0);
 		            	
-						if(itemsIndex != -1) {
-							if(currentRow[0] != null) {
-								currentRow[0].setStyle("-fx-font-weight: normal");//removeIf(style -> style.equals("-fx-font-weight: bold"));
-								currentRow[0] = null;
-							}
-							
+						if(itemsIndex != -1) {							
 							Vector<String> tempData = itemData.GetRowByIndex(itemsIndex);
-							itemNameValue.set(tempData.get(1));
-							itemDscrValue.set(tempData.get(2));
-							price.setText("$"+tempData.get(3));
-							quantity.setText("1.00");
 							
-							
-							Label receiptItem = new Label(itemName.getText());
-							
-							Label receiptQuantity = new Label(String.format("%.2f", Double.parseDouble(quantity.getText())));
-							Label receiptPrice = new Label(price.getText());
-							BigDecimal RP = new BigDecimal(price.getText().substring(1)).setScale(2, RoundingMode.HALF_UP);
-							BigDecimal RQ = new BigDecimal(quantity.getText()).setScale(2, RoundingMode.HALF_UP);
-							Label receiptTotal = new Label("$"+String.format("%.2f", RP.doubleValue()*RQ.doubleValue()));
-							receiptItem.getStyleClass().add("receiptItem");
-							receiptQuantity.getStyleClass().add("receiptPrice");
-							receiptPrice.getStyleClass().add("receiptPrice");
-							receiptTotal.getStyleClass().add("receiptPrice");
-							
-							Label indexHolder = new Label(String.valueOf(itemsIndex));
-							indexHolder.setVisible(false);
-							
-							HBox rowItems = new HBox();
-							rowItems.setPrefWidth(297);
-							rowItems.getChildren().addAll(receiptItem, receiptQuantity, receiptPrice, receiptTotal, indexHolder);
-							rowItems.setOnMouseClicked(new EventHandler<MouseEvent>() {
-								@Override
-								public void handle(MouseEvent e) {
-									if(currentRow[0] != null) {
-										currentRow[0].setStyle("-fx-font-weight: normal");//removeIf(style -> style.equals("-fx-font-weight: bold"));
-									}	
-									rowItems.setStyle("-fx-font-weight: bold");
-									currentRow[0] = rowItems;
-									Label temp = (Label)currentRow[0].getChildren().get(4);
-									itemNameValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 1));
-									itemDscrValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 2));
-									temp = (Label)currentRow[0].getChildren().get(3);
-									price.setText(temp.getText());
-									temp = (Label)currentRow[0].getChildren().get(1);
-									quantity.setText(temp.getText());
-									TextFields[oldFocus[0]].requestFocus();
-									TextFields[oldFocus[0]].selectEnd();
-									//setId(0);
-								}
-							});
-							//////////////////////////////////////	
-							rowItems.setStyle("-fx-font-weight: bold");
-							Label temp = (Label)rowItems.getChildren().get(4);
-							itemNameValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 1));
-							itemDscrValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 2));
-							price.setText("$"+itemData.readFromCsv(Integer.parseInt(temp.getText()), 3));
-							temp = (Label)rowItems.getChildren().get(1);
-							quantity.setText(temp.getText());
-							//////////////////////////////////////
-							receiptContents.getChildren().add(rowItems);//, 0, receiptContentsRows[0], 4, 1);
-							currentRow[0] = rowItems;
-							updatePrice(receiptContents, subtotalValue, taxValue, totalValue);
-							receiptContentsRows[0]++;
-							scanItem.setText("");							
+							addItem(itemData, tempData, itemsIndex, itemNameValue, itemDscrValue, price, quantity, itemPic, currentRow, TextFields, oldFocus, receiptContents, subtotalValue, taxValue, totalValue, scanItem);
 						}
 						else {
-							//System.out.println("NOTHERE");
+							//Item not found
+							//maybe output error?
 						}
 					}
-	            	else if(currentRow[0] != null) {
+	            	else if(currentRow[0] != null && newValue.equals("")) {
 	            		
 	            	}
 	            	else {
@@ -463,6 +427,7 @@ public class Main extends Application {
 	            		itemDscrValue.set("");
 	            		price.setText("");
 	            		quantity.setText("");
+	            		itemPic.setImage(null);
 	            	}
 				}
 			});
@@ -743,7 +708,22 @@ public class Main extends Application {
 					scanItem.selectEnd();
 				}
 			});
-			
+			openMenu.setOnAction(new EventHandler<ActionEvent>() {
+				@Override public void handle(ActionEvent e) {
+					try {
+						openItemsMenu(root, left, itemData, receiptContents, scanItem, itemNameValue, itemDscrValue, price, quantity, itemPic, currentRow, TextFields, oldFocus, subtotalValue, taxValue, totalValue);
+					} catch (FileNotFoundException e1) {
+						e1.printStackTrace();
+					}
+				}
+			});
+			openSignIn.setOnAction(new EventHandler<ActionEvent>() {
+				@Override public void handle(ActionEvent e) {
+					openCashierSignIn(root, cashierValue, scanItem);
+					scanItem.requestFocus();
+					scanItem.selectEnd();
+				}
+			});
 						
 			
 			
@@ -754,6 +734,86 @@ public class Main extends Application {
 		}
     }
 	
+	private void addItem(CSVhandler itemData, Vector<String> tempData, int itemsIndex, StringProperty itemNameValue, StringProperty itemDscrValue, TextField price, TextField quantity, ImageView itemPic, HBox[] currentRow, TextField[] TextFields, int[] oldFocus, VBox receiptContents, StringProperty subtotalValue, StringProperty taxValue, StringProperty totalValue, TextField scanItem) {
+		if(currentRow[0] != null) {
+			currentRow[0].setStyle("-fx-font-weight: normal");//removeIf(style -> style.equals("-fx-font-weight: bold"));
+			currentRow[0] = null;
+		}
+		
+		itemNameValue.set(tempData.get(1));
+		itemDscrValue.set(tempData.get(2));
+		price.setText("$"+tempData.get(3));
+		quantity.setText("1.00");
+		try {
+			setImage(itemPic,"/resources/images/"+tempData.get(4));
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		}
+		
+		
+		Label receiptItem = new Label(tempData.get(1));
+		
+		Label receiptQuantity = new Label(String.format("%.2f", Double.parseDouble(quantity.getText())));
+		Label receiptPrice = new Label("$"+tempData.get(3));
+		BigDecimal RP = new BigDecimal(tempData.get(3)).setScale(2, RoundingMode.HALF_UP);
+		BigDecimal RQ = new BigDecimal("1.00").setScale(2, RoundingMode.HALF_UP);
+		Label receiptTotal = new Label("$"+String.format("%.2f", RP.doubleValue()*RQ.doubleValue()));
+		receiptItem.getStyleClass().add("receiptItem");
+		receiptQuantity.getStyleClass().add("receiptPrice");
+		receiptPrice.getStyleClass().add("receiptPrice");
+		receiptTotal.getStyleClass().add("receiptPrice");
+		
+		Label indexHolder = new Label(String.valueOf(itemsIndex));
+		indexHolder.setVisible(false);
+		
+		HBox rowItems = new HBox();
+		rowItems.setPrefWidth(297);
+		rowItems.getChildren().addAll(receiptItem, receiptQuantity, receiptPrice, receiptTotal, indexHolder);
+		
+		
+		/* When item in receipt is clicked, it should be "selected" and become bold.
+		 * The item name, description, price, and quantity will be displayed.
+		 * If a change is made to the items price or quantity, then it will also be made to the receipt.
+		 * When an item gets selected, the previously selected item is no longer selected.
+		 * */
+		rowItems.setOnMouseClicked(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent e) {
+				if(currentRow[0] != null) {
+					currentRow[0].setStyle("-fx-font-weight: normal");//removeIf(style -> style.equals("-fx-font-weight: bold"));
+				}	
+				rowItems.setStyle("-fx-font-weight: bold");
+				currentRow[0] = rowItems;
+				Label temp = (Label)currentRow[0].getChildren().get(4); //temp = itemData index
+				itemNameValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 1));
+				itemDscrValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 2));
+				temp = (Label)currentRow[0].getChildren().get(2);
+				price.setText(temp.getText());
+				temp = (Label)currentRow[0].getChildren().get(1);
+				quantity.setText(temp.getText());
+				TextFields[oldFocus[0]].requestFocus();
+				TextFields[oldFocus[0]].selectEnd();
+				//setId(0);
+			}
+		});
+		
+		
+		//////////////////////////////////////	
+		rowItems.setStyle("-fx-font-weight: bold");
+		Label temp = (Label)rowItems.getChildren().get(4);
+		itemNameValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 1));
+		itemDscrValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 2));
+		price.setText("$"+itemData.readFromCsv(Integer.parseInt(temp.getText()), 3));
+		temp = (Label)rowItems.getChildren().get(1);
+		quantity.setText(temp.getText());
+		//////////////////////////////////////
+		receiptContents.getChildren().add(rowItems);//, 0, receiptContentsRows[0], 4, 1);
+		currentRow[0] = rowItems;
+		
+		updatePrice(receiptContents, subtotalValue, taxValue, totalValue);
+		//receiptContentsRows[0]++;
+		scanItem.setText("");				
+	}
 	
 	private void updatePrice(VBox receiptContents, StringProperty subtotalValue, StringProperty taxValue, StringProperty totalValue) {
 		double subtotalEnd = 0;
@@ -792,7 +852,7 @@ public class Main extends Application {
 	
 	
 	private void openCashierSignIn(StackPane root, StringProperty cashierName, TextField scanItem) {
-		StackPane newRoot = new StackPane();
+		//StackPane newRoot = new StackPane();
 		VBox vbox = new VBox();
 		//grid.getStyleClass().add("signInPane");
 		Label label = new Label("Cashier name:");
@@ -819,7 +879,7 @@ public class Main extends Application {
 		}
 		//grid.
 		vbox.setAlignment(Pos.CENTER);
-		newRoot.getChildren().add(vbox);
+		//newRoot.getChildren().add(vbox);
 		root.getChildren().get(0).setDisable(true);
 		root.getChildren().add(vbox);
 		enterCashier.setOnKeyPressed(new EventHandler<KeyEvent>()
@@ -854,8 +914,74 @@ public class Main extends Application {
 				}
 			}
 		});
+	} //hello world!
+	
+	private void openItemsMenu(StackPane root, VBox disable, CSVhandler itemData, VBox receiptContents, TextField scanItem, StringProperty itemNameValue, StringProperty itemDscrValue, TextField price, TextField quantity, ImageView itemPic, HBox[] currentRow, TextField[] TextFields, int[] oldFocus, StringProperty subtotalValue, StringProperty taxValue, StringProperty totalValue) throws FileNotFoundException {
+		disable.setDisable(true);
+		VBox menuPane = new VBox();
+		ScrollPane menuHolder = new ScrollPane();
+		GridPane itemMenu = new GridPane();
+		int col = 0;
+		int[] itemsIndex = {0};
+		for(int i = 0; i < itemData.getNumRows(); i++) {
+			VBox item = new VBox();
+			ImageView menuPic = new ImageView();
+			menuPic.setFitHeight(60);
+			menuPic.setFitWidth(100);
+			Vector<String> tempData = itemData.GetRowByIndex(i);
+			setImage(menuPic,"/resources/images/"+itemData.readFromCsv(i, 4));
+			Label itemName = new Label(itemData.readFromCsv(i, 1));
+			itemName.setStyle("-fx-pref-width: 100px; -fx-alignment: center;");
+			item.getChildren().addAll(menuPic, itemName);
+			if(i%5==0 && i!=0) {
+				col++;
+			}
+			itemMenu.add(item, i-(col*5), col, 1, 1);
+			item.getStyleClass().add("menuItem");
+			itemsIndex[0] = i;
+			item.setOnMouseClicked(new EventHandler<MouseEvent>() {
+				@Override
+				public void handle(MouseEvent e) {
+					addItem(itemData, tempData, itemsIndex[0], itemNameValue, itemDscrValue, price, quantity, itemPic, currentRow, TextFields, oldFocus, receiptContents, subtotalValue, taxValue, totalValue, scanItem);
+				}
+			});
+			
+		}
+		Button close = new Button("Close");
+		close.setStyle("-fx-pref-width: 100px; -fx-alignment: center;");
+		close.setOnAction(new EventHandler<ActionEvent>() {
+			@Override public void handle(ActionEvent e) {
+				root.getChildren().remove(root.getChildren().get(1));
+					scanItem.requestFocus();
+					disable.setDisable(false);
+			}
+		});
+		HBox buttonLoc = new HBox();
+		buttonLoc.setStyle("-fx-padding: 10 0 0 0;");
+		buttonLoc.setAlignment(Pos.CENTER);
+		buttonLoc.getChildren().add(close);
+		int paneWidth=610;
+		menuPane.setMaxSize(paneWidth, 550);
+		menuPane.setTranslateX(-150);
+		menuPane.setTranslateY(30);
+		menuPane.getStyleClass().add("menuPane");
+		menuHolder.setContent(itemMenu);
+		menuHolder.setPrefViewportWidth(paneWidth-60);
+		menuHolder.setPrefViewportHeight(500);
+		menuPane.getChildren().addAll(menuHolder, buttonLoc);
+		root.getChildren().add(menuPane);
 	}
 	
+	private void setImage(ImageView imageView, String url) throws FileNotFoundException {
+		if(url == null) {
+			imageView.setImage(null);
+		}
+		else {
+			InputStream stream = new FileInputStream(System.getProperty("user.dir")+url);
+			Image image = new Image(stream);
+			imageView.setImage(image);
+		}
+	}
 
 	
 	public static void main(String[] args) {

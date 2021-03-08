@@ -1,6 +1,7 @@
 .title {
 	-fx-font: 50px verdana;
 	-fx-fill: black;
+	-fx-alignment: center;
 }
 
 .itemAboutGrid {
@@ -95,7 +96,27 @@
 	
 }
 
+.menuPane {
+	-fx-fill: red;
+	-fx-stroke: black;
+	-fx-stroke-width: 5;
+	-fx-background-color: silver;
+	-fx-padding: 30 30;
+}
 
+.menuItem {
+	-fx-border-color: black;
+	-fx-border-insets: 5;
+}
 
+.leftButton {
+	-fx-pref-width: 100px;
+	-fx-pref-height: 200px;
+}
+
+.leftPane {
+	-fx-padding: 0 0 15 5;
+	-fx-alignment: center-left;
+}
 
 
