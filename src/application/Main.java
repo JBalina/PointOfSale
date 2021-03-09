@@ -455,7 +455,19 @@ public class Main extends Application {
 				public void changed(ObservableValue<? extends String> observable,
 						String oldValue, String newValue) {
 					if(currentRow[0] != null) {
-						if(newValue.length()>0 && newValue.charAt(newValue.length()-1) != '.') {
+						if(newValue.equals("0")) {
+							receiptContents.getChildren().remove(currentRow[0]);
+							updatePrice(receiptContents, subtotalValue, taxValue, totalValue);
+							itemNameValue.set("");
+		            		itemDscrValue.set("");
+		            		price.setText("");
+		            		quantity.setText("");
+		            		itemPic.setImage(null);
+							currentRow[0] = null;
+							scanItem.requestFocus();
+							scanItem.selectEnd();
+						}
+						else if(newValue.length()>0 && newValue.charAt(newValue.length()-1) != '.') {
 							Label temp = (Label)currentRow[0].getChildren().get(1);
 							BigDecimal format = new BigDecimal(newValue).setScale(2, RoundingMode.HALF_UP);
 							temp.setText((String.format("%.2f", format.doubleValue())));
@@ -740,76 +752,110 @@ public class Main extends Application {
 			currentRow[0] = null;
 		}
 		
-		itemNameValue.set(tempData.get(1));
-		itemDscrValue.set(tempData.get(2));
-		price.setText("$"+tempData.get(3));
-		quantity.setText("1.00");
-		try {
-			setImage(itemPic,"/resources/images/"+tempData.get(4));
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
+		boolean alreadyAdded = false;
+		HBox existingItem = new HBox();
+		for (Node child : receiptContents.getChildren()) {
+			existingItem = (HBox) child;
+			Label tempLabel = (Label) existingItem.getChildren().get(4);
+			if(itemsIndex == Integer.parseInt(tempLabel.getText())) {
+				alreadyAdded = true;
+				break;
+			}
 		}
 		
-		
-		Label receiptItem = new Label(tempData.get(1));
-		
-		Label receiptQuantity = new Label(String.format("%.2f", Double.parseDouble(quantity.getText())));
-		Label receiptPrice = new Label("$"+tempData.get(3));
-		BigDecimal RP = new BigDecimal(tempData.get(3)).setScale(2, RoundingMode.HALF_UP);
-		BigDecimal RQ = new BigDecimal("1.00").setScale(2, RoundingMode.HALF_UP);
-		Label receiptTotal = new Label("$"+String.format("%.2f", RP.doubleValue()*RQ.doubleValue()));
-		receiptItem.getStyleClass().add("receiptItem");
-		receiptQuantity.getStyleClass().add("receiptPrice");
-		receiptPrice.getStyleClass().add("receiptPrice");
-		receiptTotal.getStyleClass().add("receiptPrice");
-		
-		Label indexHolder = new Label(String.valueOf(itemsIndex));
-		indexHolder.setVisible(false);
-		
-		HBox rowItems = new HBox();
-		rowItems.setPrefWidth(297);
-		rowItems.getChildren().addAll(receiptItem, receiptQuantity, receiptPrice, receiptTotal, indexHolder);
-		
-		
-		/* When item in receipt is clicked, it should be "selected" and become bold.
-		 * The item name, description, price, and quantity will be displayed.
-		 * If a change is made to the items price or quantity, then it will also be made to the receipt.
-		 * When an item gets selected, the previously selected item is no longer selected.
-		 * */
-		rowItems.setOnMouseClicked(new EventHandler<MouseEvent>() {
-			@Override
-			public void handle(MouseEvent e) {
-				if(currentRow[0] != null) {
-					currentRow[0].setStyle("-fx-font-weight: normal");//removeIf(style -> style.equals("-fx-font-weight: bold"));
-				}	
-				rowItems.setStyle("-fx-font-weight: bold");
-				currentRow[0] = rowItems;
-				Label temp = (Label)currentRow[0].getChildren().get(4); //temp = itemData index
-				itemNameValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 1));
-				itemDscrValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 2));
-				temp = (Label)currentRow[0].getChildren().get(2);
-				price.setText(temp.getText());
-				temp = (Label)currentRow[0].getChildren().get(1);
-				quantity.setText(temp.getText());
-				TextFields[oldFocus[0]].requestFocus();
-				TextFields[oldFocus[0]].selectEnd();
-				//setId(0);
+		if(alreadyAdded) {
+			existingItem.setStyle("-fx-font-weight: bold");
+			currentRow[0] = existingItem;
+			Label tempQuantity = (Label) existingItem.getChildren().get(1);
+			BigDecimal TP = new BigDecimal(tempQuantity.getText()).add(new BigDecimal(1.00)).setScale(2, RoundingMode.HALF_UP);
+			tempQuantity.setText(String.format("%.2f", TP.setScale(2, RoundingMode.HALF_UP).doubleValue()));
+			updateHBoxTotal(existingItem);
+			itemNameValue.set(itemData.readFromCsv(itemsIndex, 1));
+			itemDscrValue.set(itemData.readFromCsv(itemsIndex, 2));
+			price.setText("$"+itemData.readFromCsv(itemsIndex, 3));
+			quantity.setText(tempQuantity.getText());
+			try {
+				setImage(itemPic,"/resources/images/"+tempData.get(4));
+			} catch (FileNotFoundException e1) {
+				e1.printStackTrace();
 			}
-		});
+		}
+		else {
 		
-		
-		//////////////////////////////////////	
-		rowItems.setStyle("-fx-font-weight: bold");
-		Label temp = (Label)rowItems.getChildren().get(4);
-		itemNameValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 1));
-		itemDscrValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 2));
-		price.setText("$"+itemData.readFromCsv(Integer.parseInt(temp.getText()), 3));
-		temp = (Label)rowItems.getChildren().get(1);
-		quantity.setText(temp.getText());
-		//////////////////////////////////////
-		receiptContents.getChildren().add(rowItems);//, 0, receiptContentsRows[0], 4, 1);
-		currentRow[0] = rowItems;
-		
+			itemNameValue.set(tempData.get(1));
+			itemDscrValue.set(tempData.get(2));
+			price.setText("$"+tempData.get(3));
+			quantity.setText("1.00");
+			try {
+				setImage(itemPic,"/resources/images/"+tempData.get(4));
+			} catch (FileNotFoundException e1) {
+				e1.printStackTrace();
+			}
+			
+			Label receiptItem = new Label(tempData.get(1));
+			
+			Label receiptQuantity = new Label(String.format("%.2f", Double.parseDouble(quantity.getText())));
+			Label receiptPrice = new Label("$"+tempData.get(3));
+			BigDecimal RP = new BigDecimal(tempData.get(3)).setScale(2, RoundingMode.HALF_UP);
+			BigDecimal RQ = new BigDecimal("1.00").setScale(2, RoundingMode.HALF_UP);
+			Label receiptTotal = new Label("$"+String.format("%.2f", RP.doubleValue()*RQ.doubleValue()));
+			receiptItem.getStyleClass().add("receiptItem");
+			receiptQuantity.getStyleClass().add("receiptPrice");
+			receiptPrice.getStyleClass().add("receiptPrice");
+			receiptTotal.getStyleClass().add("receiptPrice");
+			
+			Label indexHolder = new Label(String.valueOf(itemsIndex));
+			indexHolder.setVisible(false);
+			
+			HBox rowItems = new HBox();
+			rowItems.setPrefWidth(297);
+			rowItems.getChildren().addAll(receiptItem, receiptQuantity, receiptPrice, receiptTotal, indexHolder);
+			
+			
+			/* When item in receipt is clicked, it should be "selected" and become bold.
+			 * The item name, description, price, and quantity will be displayed.
+			 * If a change is made to the items price or quantity, then it will also be made to the receipt.
+			 * When an item gets selected, the previously selected item is no longer selected.
+			 * */
+			rowItems.setOnMouseClicked(new EventHandler<MouseEvent>() {
+				@Override
+				public void handle(MouseEvent e) {
+					if(currentRow[0] != null) {
+						currentRow[0].setStyle("-fx-font-weight: normal");//removeIf(style -> style.equals("-fx-font-weight: bold"));
+					}	
+					rowItems.setStyle("-fx-font-weight: bold");
+					currentRow[0] = rowItems;
+					Label temp = (Label)currentRow[0].getChildren().get(4); //temp = itemData index
+					itemNameValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 1));
+					itemDscrValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 2));
+					try {
+						setImage(itemPic,"/resources/images/"+itemData.readFromCsv(Integer.parseInt(temp.getText()), 4));
+					} catch (FileNotFoundException e1) {
+						e1.printStackTrace();
+					}
+					temp = (Label)currentRow[0].getChildren().get(2);
+					price.setText(temp.getText());
+					temp = (Label)currentRow[0].getChildren().get(1);
+					quantity.setText(temp.getText());
+					TextFields[oldFocus[0]].requestFocus();
+					TextFields[oldFocus[0]].selectEnd();
+					//setId(0);
+				}
+			});
+			
+			
+			//////////////////////////////////////	
+			rowItems.setStyle("-fx-font-weight: bold");
+			Label temp = (Label)rowItems.getChildren().get(4);
+			itemNameValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 1));
+			itemDscrValue.set(itemData.readFromCsv(Integer.parseInt(temp.getText()), 2));
+			price.setText("$"+itemData.readFromCsv(Integer.parseInt(temp.getText()), 3));
+			temp = (Label)rowItems.getChildren().get(1);
+			quantity.setText(temp.getText());
+			//////////////////////////////////////
+			receiptContents.getChildren().add(rowItems);//, 0, receiptContentsRows[0], 4, 1);
+			currentRow[0] = rowItems;
+		}
 		updatePrice(receiptContents, subtotalValue, taxValue, totalValue);
 		//receiptContentsRows[0]++;
 		scanItem.setText("");				
@@ -922,7 +968,6 @@ public class Main extends Application {
 		ScrollPane menuHolder = new ScrollPane();
 		GridPane itemMenu = new GridPane();
 		int col = 0;
-		int[] itemsIndex = {0};
 		for(int i = 0; i < itemData.getNumRows(); i++) {
 			VBox item = new VBox();
 			ImageView menuPic = new ImageView();
@@ -938,7 +983,7 @@ public class Main extends Application {
 			}
 			itemMenu.add(item, i-(col*5), col, 1, 1);
 			item.getStyleClass().add("menuItem");
-			itemsIndex[0] = i;
+			int[] itemsIndex = {i};
 			item.setOnMouseClicked(new EventHandler<MouseEvent>() {
 				@Override
 				public void handle(MouseEvent e) {
