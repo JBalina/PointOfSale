@@ -502,7 +502,6 @@ public class Main extends Application {
 					}
 				}
 			});
-			//REMEMBER think about $ sign for price input
 			price.focusedProperty().addListener(new ChangeListener<Boolean>() {
 				@Override
 				public void changed(ObservableValue<? extends Boolean> arg0, Boolean oldPropertyValue, Boolean newPropertyValue) {
@@ -1005,7 +1004,7 @@ public class Main extends Application {
 		buttonLoc.setStyle("-fx-padding: 10 0 0 0;");
 		buttonLoc.setAlignment(Pos.CENTER);
 		buttonLoc.getChildren().add(close);
-		int paneWidth=610;
+		int paneWidth=635;
 		menuPane.setMaxSize(paneWidth, 550);
 		menuPane.setTranslateX(-150);
 		menuPane.setTranslateY(30);
